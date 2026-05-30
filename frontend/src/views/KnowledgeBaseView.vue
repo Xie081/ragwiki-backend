@@ -5,6 +5,7 @@ import { getKnowledgeBase, deleteKnowledgeBase } from '@/api/knowledgeBase'
 import { getDocuments, uploadDocument, deleteDocument } from '@/api/document'
 import { useChatStore } from '@/stores/chat'
 import ChatPanel from '@/components/chat/ChatPanel.vue'
+import SearchBar from '@/components/knowledge/SearchBar.vue'
 import type { KnowledgeBase, Document } from '@/types'
 
 const route = useRoute()
@@ -93,6 +94,7 @@ onUnmounted(() => chatStore.clearMessages())
         <p v-if="kb.description">{{ kb.description }}</p>
       </div>
       <div class="header-actions">
+        <SearchBar :knowledgeBaseId="kbId" />
         <label class="btn-primary" :class="{ disabled: uploading }">
           {{ uploading ? '上传中...' : '+ 上传文档' }}
           <input type="file" accept=".pdf,.md,.markdown" hidden @change="handleUpload" :disabled="uploading" />

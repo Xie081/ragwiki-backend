@@ -1,11 +1,13 @@
 package cs.sbs.web.personalprojectweb2026.service;
 
 import cs.sbs.web.personalprojectweb2026.model.entity.Document;
-import cs.sbs.web.personalprojectweb2026.model.entity.DocumentChunk;
-import cs.sbs.web.personalprojectweb2026.repository.DocumentChunkRepository;
 import cs.sbs.web.personalprojectweb2026.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -20,14 +23,17 @@ import java.util.List;
 public class DocumentProcessingService {
 
     private final DocumentRepository documentRepository;
-    private final DocumentChunkRepository chunkRepository;
     private final DocumentParserService parserService;
     private final TextChunker textChunker;
     private final EmbeddingService embeddingService;
+    private final PromptTemplateService promptTemplateService;
+    private final ChatModel chatModel;
     private final JdbcTemplate jdbcTemplate;
 
+    private static final int SUMMARY_MAX_CHARS = 3000;
+
     /**
-     * Process a document asynchronously: parse → chunk → embed → store.
+     * Process a document asynchronously: parse → chunk → embed → store → summarize.
      */
     @Async
     @Transactional
@@ -60,11 +66,20 @@ public class DocumentProcessingService {
                 float[] embedding = embeddingService.embed(chunkText);
                 String vectorStr = embeddingService.toPgVectorString(embedding);
 
-                // Insert chunk with embedding using native SQL for vector type
                 jdbcTemplate.update("""
                     INSERT INTO document_chunks (content, chunk_index, embedding, document_id, kb_id, created_at)
                     VALUES (?, ?, ?::vector, ?, ?, NOW())
                     """, chunkText, i, vectorStr, doc.getId(), doc.getKbId());
+            }
+
+            // Step 5: Generate AI summary
+            try {
+                String summary = generateSummary(doc.getOriginalName(), text);
+                doc.setSummary(summary);
+                log.info("Document {} summary generated", documentId);
+            } catch (Exception e) {
+                log.warn("Summary generation failed for document {}: {}", documentId, e.getMessage());
+                doc.setSummary("摘要生成失败");
             }
 
             // Update status to COMPLETED
@@ -77,5 +92,26 @@ public class DocumentProcessingService {
             doc.setStatus(Document.DocumentStatus.FAILED);
             documentRepository.save(doc);
         }
+    }
+
+    private String generateSummary(String title, String fullText) {
+        // Truncate text for summary generation
+        String content = fullText.length() > SUMMARY_MAX_CHARS
+                ? fullText.substring(0, SUMMARY_MAX_CHARS) + "..."
+                : fullText;
+
+        // Render summarize prompt template
+        var rendered = promptTemplateService.render("summarize", Map.of(
+                "document_title", title,
+                "content", content
+        ));
+
+        // Call LLM
+        var prompt = new Prompt(List.of(
+                new SystemMessage(rendered.systemPrompt()),
+                new UserMessage(rendered.userPrompt())
+        ));
+        var response = chatModel.call(prompt);
+        return response.getResult().getOutput().getText();
     }
 }
