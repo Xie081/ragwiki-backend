@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getKnowledgeBase, deleteKnowledgeBase } from '@/api/knowledgeBase'
 import { getDocuments, uploadDocument, deleteDocument } from '@/api/document'
+import { useChatStore } from '@/stores/chat'
+import ChatPanel from '@/components/chat/ChatPanel.vue'
 import type { KnowledgeBase, Document } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 const kbId = Number(route.params.id)
+const chatStore = useChatStore()
 
 const kb = ref<KnowledgeBase | null>(null)
 const documents = ref<Document[]>([])
@@ -78,6 +81,7 @@ function getStatusClass(status: string): string {
 }
 
 onMounted(load)
+onUnmounted(() => chatStore.clearMessages())
 </script>
 
 <template>
@@ -98,17 +102,19 @@ onMounted(load)
     </header>
 
     <main>
-      <div v-if="loading" class="empty">加载中...</div>
+      <div class="content-layout">
+        <div class="doc-section">
+          <div v-if="loading" class="empty">加载中...</div>
 
-      <div v-else-if="documents.length === 0" class="empty">
-        <p>📄 还没有文档</p>
-        <label class="btn-primary">
-          上传第一个文档
-          <input type="file" accept=".pdf,.md,.markdown" hidden @change="handleUpload" />
-        </label>
-      </div>
+          <div v-else-if="documents.length === 0" class="empty">
+            <p>📄 还没有文档</p>
+            <label class="btn-primary">
+              上传第一个文档
+              <input type="file" accept=".pdf,.md,.markdown" hidden @change="handleUpload" />
+            </label>
+          </div>
 
-      <div v-else class="doc-table">
+          <div v-else class="doc-table">
         <div class="doc-header">
           <span class="col-name">文档名称</span>
           <span class="col-type">类型</span>
@@ -130,6 +136,12 @@ onMounted(load)
           <span class="col-action">
             <button class="btn-sm" @click="handleDeleteDoc(doc.id)">删除</button>
           </span>
+        </div>
+      </div>
+        </div>
+
+        <div class="chat-section">
+          <ChatPanel :knowledgeBaseId="kbId" />
         </div>
       </div>
     </main>
@@ -185,7 +197,18 @@ header p { color: #888; font-size: 0.9rem; margin: 0; }
   font-size: 0.8rem;
 }
 
-main { padding: 24px 32px; max-width: 1200px; margin: 0 auto; }
+main { padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+.content-layout {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .content-layout { grid-template-columns: 1fr; }
+}
+.doc-section { min-width: 0; }
+.chat-section { position: sticky; top: 24px; }
 
 .doc-table {
   background: #fff;
