@@ -319,8 +319,9 @@ npm run dev
 
 | 服务 | 平台 | 地址 |
 |------|------|------|
-| 前端 | ▲ Vercel | [待部署] |
-| 后端 | ☁️ Render | [待部署] |
+| 前端 | ▲ Vercel | https://frontend-beige-five-92.vercel.app |
+| 后端 | 🚂 Railway | https://ragwiki-api-production-c4d2.up.railway.app |
+| 数据库 | 🚂 Railway | PostgreSQL 16 + PGVector |
 
 ### Docker 一键启动
 
@@ -328,7 +329,16 @@ npm run dev
 docker-compose up -d
 ```
 
-包含 PostgreSQL + PGVector + SpringBoot 后端。
+包含 PostgreSQL 16 + PGVector + SpringBoot 后端（多阶段 Docker 构建）。
+
+### Railway 部署
+
+项目已配置 `Dockerfile`（多阶段构建：Maven 编译 + JRE 运行），Railway 可直接从 Git 仓库自动构建部署。
+
+```bash
+# 推送后 Railway 自动部署
+git push railway main
+```
 
 ### 环境变量（部署平台需配置）
 
@@ -347,8 +357,8 @@ docker-compose up -d
 - [x] GitHub 代码仓库（含频繁 Commit 记录）
 - [x] 系统架构图（见上方）
 - [x] ER 数据库设计图（见上方）
-- [ ] Prompt 报告（`docs/prompt-report.md`）
-- [ ] 部署外网链接
+- [x] Prompt 报告（`docs/prompt-report.md`）
+- [x] 部署外网链接（Vercel + Railway）
 - [ ] 功能演示视频
 
 ---
