@@ -1,6 +1,9 @@
 # Docker environment overrides
 # Used when running via docker-compose (SPRING_PROFILES_ACTIVE=docker)
 
+server:
+  port: ${PORT:8080}
+
 spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/rag_wiki}
