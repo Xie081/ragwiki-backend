@@ -29,6 +29,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
                 .requestMatchers("/api/auth/**").permitAll()
+                // Health check
+                .requestMatchers("/health").permitAll()
                 // Swagger / OpenAPI
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**").permitAll()
                 // H2 Console (dev only)
