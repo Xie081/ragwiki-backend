@@ -10,4 +10,4 @@ WORKDIR /app
 RUN mkdir -p /app/uploads
 COPY --from=builder /workspace/target/*.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Xmx1g", "-Xms512m", "-XX:+UseG1GC", "-jar", "app.jar"]

@@ -35,4 +35,30 @@ public interface DocumentChunkRepository extends JpaRepository<DocumentChunk, Lo
             @Param("embedding") String embeddingStr,
             @Param("kbId") Long kbId,
             @Param("limit") int limit);
+
+    /**
+     * Keyword-based search: finds chunks containing any of the given keywords.
+     * Uses PostgreSQL ILIKE for case-insensitive matching.
+     * @param patterns pre-built ILIKE patterns joined with OR, e.g. "%keyword1% OR content ILIKE %keyword2%"
+     */
+    @Query(value = """
+        SELECT DISTINCT dc.*
+        FROM document_chunks dc
+        WHERE dc.kb_id = :kbId
+          AND (dc.content ILIKE CONCAT('%', :kw0, '%')
+               OR dc.content ILIKE CONCAT('%', :kw1, '%')
+               OR dc.content ILIKE CONCAT('%', :kw2, '%')
+               OR dc.content ILIKE CONCAT('%', :kw3, '%')
+               OR dc.content ILIKE CONCAT('%', :kw4, '%'))
+        ORDER BY dc.chunk_index
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<DocumentChunk> searchByKeywords(
+            @Param("kw0") String kw0,
+            @Param("kw1") String kw1,
+            @Param("kw2") String kw2,
+            @Param("kw3") String kw3,
+            @Param("kw4") String kw4,
+            @Param("kbId") Long kbId,
+            @Param("limit") int limit);
 }

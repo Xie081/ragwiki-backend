@@ -46,8 +46,10 @@ public class TextChunker {
                 chunks.add(chunk);
             }
 
-            start = end - overlap;
-            if (start >= text.length()) break;
+            // Advance with overlap; ensure forward progress
+            int nextStart = end - overlap;
+            if (nextStart <= start || nextStart >= text.length()) break;
+            start = nextStart;
         }
 
         return chunks;
