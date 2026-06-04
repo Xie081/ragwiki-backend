@@ -101,7 +101,7 @@ onUnmounted(() => chatStore.clearMessages())
         <label class="btn-upload" :class="{ disabled: uploading }">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           {{ uploading ? '上传中...' : '上传文档' }}
-          <input type="file" accept=".pdf,.md,.markdown" hidden @change="handleUpload" :disabled="uploading" />
+          <input type="file" accept=".pdf,.md,.markdown,.txt,.docx,.html,.htm" hidden @change="handleUpload" :disabled="uploading" />
         </label>
         <button class="btn-ghost-danger" @click="handleDeleteKB">删除知识库</button>
       </div>
@@ -297,8 +297,11 @@ onUnmounted(() => chatStore.clearMessages())
   font-weight: 600;
   text-transform: uppercase;
 }
-.type-badge.pdf { background: var(--rose-light); color: var(--dusty-rose); }
+.type-badge.pdf      { background: var(--rose-light); color: var(--dusty-rose); }
 .type-badge.markdown { background: var(--blue-light); color: var(--dusty-blue); }
+.type-badge.txt      { background: var(--sage-light); color: var(--sage); }
+.type-badge.docx     { background: #e8daef; color: #7b5ea7; }
+.type-badge.html     { background: #fdebd0; color: #b9770e; }
 
 .status-badge {
   padding: 2px 10px;

@@ -60,15 +60,7 @@ public class DocumentService {
 
         // Determine file type
         String originalName = file.getOriginalFilename();
-        Document.FileType fileType;
-        if (originalName != null && originalName.toLowerCase().endsWith(".pdf")) {
-            fileType = Document.FileType.PDF;
-        } else if (originalName != null && (originalName.toLowerCase().endsWith(".md")
-                || originalName.toLowerCase().endsWith(".markdown"))) {
-            fileType = Document.FileType.MARKDOWN;
-        } else {
-            throw new RuntimeException("仅支持 PDF 和 Markdown 格式");
-        }
+        Document.FileType fileType = detectFileType(originalName);
 
         // Store file
         Path uploadPath = Paths.get(uploadDir);
@@ -133,5 +125,21 @@ public class DocumentService {
         } catch (IOException ignored) {
         }
         documentRepository.delete(doc);
+    }
+
+    /**
+     * Detect file type from extension.
+     */
+    private Document.FileType detectFileType(String originalName) {
+        if (originalName == null) {
+            throw new RuntimeException("无法识别文件类型");
+        }
+        String name = originalName.toLowerCase();
+        if (name.endsWith(".pdf"))               return Document.FileType.PDF;
+        if (name.endsWith(".md") || name.endsWith(".markdown")) return Document.FileType.MARKDOWN;
+        if (name.endsWith(".txt"))               return Document.FileType.TXT;
+        if (name.endsWith(".docx"))              return Document.FileType.DOCX;
+        if (name.endsWith(".html") || name.endsWith(".htm")) return Document.FileType.HTML;
+        throw new RuntimeException("不支持的文档格式，支持: PDF, Markdown, TXT, DOCX, HTML");
     }
 }

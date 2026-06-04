@@ -130,8 +130,11 @@ onMounted(async () => {
   font-size: var(--text-xs); font-weight: 600;
   text-transform: uppercase;
 }
-.type-badge.pdf { background: var(--rose-light); color: var(--dusty-rose); }
+.type-badge.pdf      { background: var(--rose-light); color: var(--dusty-rose); }
 .type-badge.markdown { background: var(--blue-light); color: var(--dusty-blue); }
+.type-badge.txt      { background: var(--sage-light); color: var(--sage); }
+.type-badge.docx     { background: #e8daef; color: #7b5ea7; }
+.type-badge.html     { background: #fdebd0; color: #b9770e; }
 .status-badge {
   padding: 3px 12px;
   border-radius: 12px;

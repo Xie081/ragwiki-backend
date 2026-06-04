@@ -55,7 +55,7 @@ public class Document {
     }
 
     public enum FileType {
-        PDF, MARKDOWN
+        PDF, MARKDOWN, TXT, DOCX, HTML
     }
 
     public enum DocumentStatus {
