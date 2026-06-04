@@ -1,4 +1,3 @@
-import api from './index'
 import type { ChatMessage } from '@/types'
 
 /**
