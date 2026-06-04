@@ -40,9 +40,9 @@ async function handleRegister() {
 
     <div class="auth-card">
       <div class="card-header">
-        <div class="logo-mark">R</div>
-        <h1>RAG Wiki</h1>
-        <p>创建你的知识库账号</p>
+        <div class="logo-mark">库</div>
+        <h1>智能知识库</h1>
+        <p>创建你的账号</p>
       </div>
 
       <form @submit.prevent="handleRegister">

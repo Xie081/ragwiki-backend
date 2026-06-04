@@ -3,6 +3,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    // Public
+    {
+      path: '/',
+      name: 'landing',
+      component: () => import('@/views/LandingView.vue')
+    },
     {
       path: '/login',
       name: 'login',
@@ -13,8 +19,9 @@ const router = createRouter({
       name: 'register',
       component: () => import('@/views/RegisterView.vue')
     },
+    // Authenticated
     {
-      path: '/',
+      path: '/app',
       name: 'dashboard',
       component: () => import('@/views/DashboardView.vue'),
       meta: { requiresAuth: true }
@@ -34,13 +41,12 @@ const router = createRouter({
   ]
 })
 
-// Auth guard
 router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token')
   if (to.meta.requiresAuth && !token) {
     next('/login')
   } else if ((to.path === '/login' || to.path === '/register') && token) {
-    next('/')
+    next('/app')
   } else {
     next()
   }

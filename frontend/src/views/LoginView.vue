@@ -15,7 +15,7 @@ async function handleLogin() {
   loading.value = true
   try {
     await authStore.login(username.value, password.value)
-    router.push('/')
+    router.push('/app')
   } catch (e: any) {
     if (e.code === 'ERR_NETWORK' || e.message?.includes('Network Error')) {
       error.value = '无法连接服务器，请确认后端已启动'
@@ -39,9 +39,8 @@ async function handleLogin() {
 
     <div class="auth-card">
       <div class="card-header">
-        <div class="logo-mark">R</div>
-        <h1>RAG Wiki</h1>
-        <p>智能知识库管理系统</p>
+        <div class="logo-mark">库</div>
+        <h1>智能知识库</h1>
       </div>
 
       <form @submit.prevent="handleLogin">

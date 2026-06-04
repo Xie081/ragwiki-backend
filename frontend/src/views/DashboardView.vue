@@ -47,8 +47,8 @@ onMounted(loadKBs)
     <header class="topbar">
       <div class="topbar-inner">
         <div class="brand">
-          <span class="brand-mark">R</span>
-          <span class="brand-text">RAG Wiki</span>
+          <span class="brand-mark">库</span>
+          <span class="brand-text">智能知识库</span>
         </div>
         <div class="topbar-actions">
           <button class="btn-primary" @click="showCreate = true">
