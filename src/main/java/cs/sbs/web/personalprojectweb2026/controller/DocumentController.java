@@ -19,9 +19,19 @@ public class DocumentController {
     private final SecurityUtil securityUtil;
 
     @GetMapping("/knowledge-bases/{kbId}/documents")
-    public ResponseEntity<?> listByKb(@PathVariable Long kbId) {
+    public ResponseEntity<?> listByKb(
+            @PathVariable Long kbId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
         Long userId = securityUtil.getCurrentUser().getId();
-        return ResponseEntity.ok(documentService.listByKb(kbId, userId));
+        var result = documentService.listByKb(kbId, userId, page, size);
+        return ResponseEntity.ok(Map.of(
+                "data", result.getContent(),
+                "totalElements", result.getTotalElements(),
+                "totalPages", result.getTotalPages(),
+                "currentPage", result.getNumber(),
+                "pageSize", result.getSize()
+        ));
     }
 
     @GetMapping("/documents/{id}")

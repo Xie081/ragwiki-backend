@@ -15,10 +15,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -31,9 +28,11 @@ public class RagService {
     private final DocumentChunkRepository chunkRepository;
     private final DocumentRepository documentRepository;
     private final PromptTemplateService promptTemplateService;
+    private final EmbeddingService embeddingService;
     private final ChatModel chatModel;
 
     private static final int TOP_K = 5;
+    private static final int KEYWORD_MIN_MATCHES = 3;
 
     // Chinese/English stop words and noise characters
     private static final Pattern NOISE = Pattern.compile(
@@ -49,27 +48,34 @@ public class RagService {
             "what", "which", "who", "whom", "how", "when", "where", "why");
 
     /**
-     * RAG query: retrieve → augment → generate.
+     * RAG query: retrieve → augment → generate (with optional conversation history).
      */
     public RagResult ask(Long kbId, String question) {
-        List<DocumentChunk> chunks = retrieveChunks(kbId, question);
+        return ask(kbId, question, List.of());
+    }
 
-        if (chunks.isEmpty()) {
-            return new RagResult("该知识库中暂无文档内容，请先上传文档。", List.of());
-        }
+    public RagResult ask(Long kbId, String question, List<ConversationMessage> history) {
+        List<DocumentChunk> chunks = retrieveChunks(kbId, question);
 
         // Batch-load all documents (fixes N+1)
         Map<Long, Document> docMap = buildDocMap(chunks);
 
-        // Build context and sources
+        // Build context and sources (allow fallback when no documents)
         String context = buildContext(chunks, docMap);
+        if (chunks.isEmpty()) {
+            context = "（暂无参考文档，请直接基于你的知识回答）";
+        }
         List<CitationSource> sources = buildSources(chunks, docMap);
 
+        // Build conversation history text
+        String historyText = buildHistoryText(history);
+
         // Render prompt template
-        RenderedPrompt rendered = promptTemplateService.render("rag-qa", Map.of(
-                "context", context,
-                "question", question
-        ));
+        Map<String, String> variables = new LinkedHashMap<>();
+        variables.put("context", context);
+        variables.put("question", question);
+        variables.put("history", historyText);
+        RenderedPrompt rendered = promptTemplateService.render("rag-qa", variables);
 
         // Call LLM
         List<Message> messages = new ArrayList<>();
@@ -82,16 +88,21 @@ public class RagService {
         String answer = response.getResult().getOutput().getText();
         long llmMs = System.currentTimeMillis() - llmStart;
 
-        log.info("RAG: question='{}', chunks={}, answer_length={}, llm_time={}ms",
-                question, chunks.size(), answer.length(), llmMs);
+        log.info("RAG: question='{}', chunks={}, history_rounds={}, answer_length={}, llm_time={}ms",
+                question, chunks.size(), history.size() / 2, answer.length(), llmMs);
 
         return new RagResult(answer, sources);
     }
 
     /**
-     * Build rendered prompt + sources for streaming.
+     * Build rendered prompt + sources for streaming (with optional conversation history).
      */
     public RenderedPromptWithSources buildRenderedPrompt(Long kbId, String question) {
+        return buildRenderedPrompt(kbId, question, List.of());
+    }
+
+    public RenderedPromptWithSources buildRenderedPrompt(Long kbId, String question,
+                                                          List<ConversationMessage> history) {
         long t0 = System.currentTimeMillis();
 
         List<DocumentChunk> chunks = retrieveChunks(kbId, question);
@@ -107,29 +118,64 @@ public class RagService {
             context = "（知识库中暂无直接匹配的内容，请基于你的知识尽力回答，但要说明知识库中未找到相关内容）";
         }
 
-        var rendered = promptTemplateService.render("rag-qa", Map.of(
-                "context", context,
-                "question", question
-        ));
+        String historyText = buildHistoryText(history);
+
+        Map<String, String> variables = new LinkedHashMap<>();
+        variables.put("context", context);
+        variables.put("question", question);
+        variables.put("history", historyText);
+        var rendered = promptTemplateService.render("rag-qa", variables);
 
         List<Message> messages = new ArrayList<>();
         messages.add(new SystemMessage(rendered.systemPrompt()));
         messages.add(new UserMessage(rendered.userPrompt()));
 
         long totalMs = System.currentTimeMillis() - t0;
-        log.info("RAG prep: keyword_search={}ms, total={}ms (chunks={})",
-                searchMs, totalMs, chunks.size());
+        log.info("RAG prep: keyword_search={}ms, total={}ms (chunks={}, history_rounds={})",
+                searchMs, totalMs, chunks.size(), history.size() / 2);
 
         return new RenderedPromptWithSources(messages, sources);
+    }
+
+    /**
+     * Build a formatted string from recent conversation history.
+     */
+    String buildHistoryText(List<ConversationMessage> history) {
+        if (history == null || history.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (ConversationMessage msg : history) {
+            sb.append(msg.role().equals("user") ? "👤 用户：" : "🤖 助手：");
+            // Truncate very long messages in history
+            String content = msg.content();
+            if (content.length() > 500) {
+                content = content.substring(0, 500) + "...";
+            }
+            sb.append(content).append("\n");
+        }
+        return sb.toString();
     }
 
     // ─── Private helpers ───
 
     /**
-     * Extract keywords from question and search chunks by keyword matching.
+     * Hybrid search: keyword first (fast), vector fallback (semantic).
+     * Combines results from both strategies when keyword results are sparse.
      */
     private List<DocumentChunk> retrieveChunks(Long kbId, String question) {
         String[] keywords = extractKeywords(question);
+
+        // If no meaningful keywords, skip keyword search entirely
+        if (keywords.length == 0) {
+            log.debug("No keywords extracted, trying vector search directly");
+            try {
+                return vectorSearch(kbId, question);
+            } catch (Exception e) {
+                log.warn("Vector search failed for keyword-less query: {}", e.getMessage());
+                return List.of();
+            }
+        }
 
         // Pad keywords array to exactly 5 (repository needs 5 params)
         String[] padded = Arrays.copyOf(keywords, 5);
@@ -144,14 +190,65 @@ public class RagService {
                 kbId, TOP_K);
 
         log.debug("Keywords: {}, matched {} chunks", Arrays.toString(keywords), chunks.size());
+
+        // Hybrid fallback: only try vector search if keyword search found something
+        // (meaning the KB has content, just not matching these exact keywords)
+        if (chunks.size() < KEYWORD_MIN_MATCHES && chunks.size() > 0) {
+            log.info("Keyword search returned only {} chunks (threshold={}), falling back to vector search",
+                    chunks.size(), KEYWORD_MIN_MATCHES);
+            try {
+                List<DocumentChunk> vectorChunks = vectorSearch(kbId, question);
+                chunks = mergeChunkResults(chunks, vectorChunks, TOP_K);
+                log.info("Hybrid search: combined {} chunks (keyword + vector)", chunks.size());
+            } catch (Exception e) {
+                log.warn("Vector search fallback failed: {}. Using keyword results only.", e.getMessage());
+            }
+        }
+
         return chunks;
+    }
+
+    /**
+     * Vector-based semantic search as fallback.
+     */
+    private List<DocumentChunk> vectorSearch(Long kbId, String question) {
+        float[] queryEmbedding = embeddingService.embed(question);
+        String vectorStr = embeddingService.toPgVectorString(queryEmbedding);
+        return chunkRepository.findSimilarChunks(vectorStr, kbId, TOP_K);
+    }
+
+    /**
+     * Merge keyword and vector search results, deduplicating by chunk ID.
+     * Keyword results come first (higher priority for exact matches).
+     * Package-private for testing.
+     */
+    List<DocumentChunk> mergeChunkResults(
+            List<DocumentChunk> keywordChunks,
+            List<DocumentChunk> vectorChunks,
+            int maxResults) {
+        java.util.LinkedHashSet<Long> seenIds = new java.util.LinkedHashSet<>();
+        List<DocumentChunk> merged = new ArrayList<>();
+
+        for (DocumentChunk c : keywordChunks) {
+            if (seenIds.add(c.getId())) {
+                merged.add(c);
+            }
+        }
+        for (DocumentChunk c : vectorChunks) {
+            if (seenIds.add(c.getId()) && merged.size() < maxResults) {
+                merged.add(c);
+            }
+        }
+
+        return merged.subList(0, Math.min(merged.size(), maxResults));
     }
 
     /**
      * Extract meaningful keywords from a question.
      * Splits by noise characters, removes stop words, returns top-5 longest tokens.
+     * Package-private for testing.
      */
-    private String[] extractKeywords(String text) {
+    String[] extractKeywords(String text) {
         if (text == null || text.isBlank()) return new String[0];
 
         return NOISE.splitAsStream(text)
@@ -209,4 +306,6 @@ public class RagService {
     public record RagResult(String answer, List<CitationSource> sources) {}
 
     public record CitationSource(String documentTitle, String snippet) {}
+
+    public record ConversationMessage(String role, String content) {}
 }

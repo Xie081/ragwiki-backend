@@ -1,12 +1,13 @@
 import api from './index'
+import type { ChatMessage } from '@/types'
 
 export interface ChatAskResponse {
   answer: string
   sources: Array<{ documentTitle: string; snippet: string }>
 }
 
-export function askQuestion(knowledgeBaseId: number, question: string) {
-  return api.post<ChatAskResponse>('/chat/ask', { knowledgeBaseId, question })
+export function askQuestion(knowledgeBaseId: number, question: string, history?: ChatMessage[]) {
+  return api.post<ChatAskResponse>('/chat/ask', { knowledgeBaseId, question, history })
 }
 
 /**
@@ -18,7 +19,8 @@ export function streamQuestion(
   onToken: (token: string) => void,
   onSources: (sources: Array<{ documentTitle: string; snippet: string }>) => void,
   onError: (err: Event) => void,
-  onComplete: () => void
+  onComplete: () => void,
+  history?: ChatMessage[]
 ): AbortController {
   const controller = new AbortController()
 
@@ -30,7 +32,7 @@ export function streamQuestion(
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ knowledgeBaseId, question }),
+    body: JSON.stringify({ knowledgeBaseId, question, history }),
     signal: controller.signal
   }).then(response => {
     if (!response.ok || !response.body) {

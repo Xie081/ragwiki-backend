@@ -1,8 +1,18 @@
 import api from './index'
 import type { Document } from '@/types'
 
-export function getDocuments(kbId: number) {
-  return api.get<Document[]>(`/knowledge-bases/${kbId}/documents`)
+export interface DocumentListResponse {
+  data: Document[]
+  totalElements: number
+  totalPages: number
+  currentPage: number
+  pageSize: number
+}
+
+export function getDocuments(kbId: number, page = 0, size = 20) {
+  return api.get<DocumentListResponse>(`/knowledge-bases/${kbId}/documents`, {
+    params: { page, size }
+  })
 }
 
 export function getDocument(id: number) {

@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+
+const MAX_LENGTH = 2000
 
 const props = defineProps<{
   disabled: boolean
@@ -13,9 +15,12 @@ const emit = defineEmits<{
 
 const input = ref('')
 
+const charCount = computed(() => input.value.length)
+const isOverLimit = computed(() => charCount.value > MAX_LENGTH)
+
 function handleSubmit() {
   const text = input.value.trim()
-  if (!text || props.disabled) return
+  if (!text || props.disabled || isOverLimit.value) return
   emit('send', text)
   input.value = ''
 }
@@ -30,11 +35,16 @@ function handleSubmit() {
       rows="2"
       @keydown.enter.exact.prevent="handleSubmit"
     />
-    <div class="actions">
-      <button v-if="isStreaming" class="btn-stop" @click="emit('stop')">⏹ 停止</button>
-      <button v-else class="btn-send" :disabled="!input.trim() || disabled" @click="handleSubmit">
-        ➤ 发送
-      </button>
+    <div class="input-footer">
+      <span class="char-count" :class="{ 'over-limit': isOverLimit }">
+        {{ charCount }}/{{ MAX_LENGTH }}
+      </span>
+      <div class="actions">
+        <button v-if="isStreaming" class="btn-stop" @click="emit('stop')">⏹ 停止</button>
+        <button v-else class="btn-send" :disabled="!input.trim() || disabled || isOverLimit" @click="handleSubmit">
+          ➤ 发送
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -57,10 +67,20 @@ textarea {
   box-sizing: border-box;
 }
 textarea:focus { border-color: #4f46e5; }
+.input-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+.char-count {
+  font-size: 0.75rem;
+  color: #aaa;
+}
+.char-count.over-limit { color: #ef4444; font-weight: 600; }
 .actions {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 8px;
+  gap: 8px;
 }
 .btn-send {
   padding: 6px 20px;

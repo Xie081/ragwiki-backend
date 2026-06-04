@@ -25,7 +25,6 @@ public class DocumentProcessingService {
     private final DocumentRepository documentRepository;
     private final DocumentParserService parserService;
     private final TextChunker textChunker;
-    private final EmbeddingService embeddingService;
     private final PromptTemplateService promptTemplateService;
     private final ChatModel chatModel;
     private final JdbcTemplate jdbcTemplate;

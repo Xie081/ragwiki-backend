@@ -9,6 +9,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,6 +38,12 @@ public class DocumentService {
     public List<Document> listByKb(Long kbId, Long userId) {
         kbService.getById(kbId, userId); // verify access
         return documentRepository.findByKbIdOrderByCreatedAtDesc(kbId);
+    }
+
+    public Page<Document> listByKb(Long kbId, Long userId, int page, int size) {
+        kbService.getById(kbId, userId); // verify access
+        Pageable pageable = PageRequest.of(page, size);
+        return documentRepository.findByKbIdOrderByCreatedAtDesc(kbId, pageable);
     }
 
     public Document getById(Long id, Long userId) {

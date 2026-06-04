@@ -35,6 +35,12 @@ async function handleSend(question: string) {
   isStreaming.value = true
   sources.value = []
 
+  // Build history from recent messages (last 3 rounds = 6 messages)
+  const recentMessages = chatStore.messages.slice(-6)
+  const history = recentMessages
+    .filter(m => m.role === 'user' || m.role === 'assistant')
+    .map(m => ({ id: m.id, role: m.role, content: m.content, timestamp: m.timestamp }))
+
   abortController = streamQuestion(
     props.knowledgeBaseId,
     question,
@@ -52,7 +58,8 @@ async function handleSend(question: string) {
     },
     () => {
       isStreaming.value = false
-    }
+    },
+    history
   )
 }
 

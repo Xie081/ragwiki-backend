@@ -19,18 +19,40 @@ const kb = ref<KnowledgeBase | null>(null)
 const documents = ref<Document[]>([])
 const loading = ref(true)
 const uploading = ref(false)
+const currentPage = ref(0)
+const totalPages = ref(0)
+const totalElements = ref(0)
+const loadingMore = ref(false)
+const PAGE_SIZE = 20
 
 async function load() {
   loading.value = true
+  currentPage.value = 0
   try {
     const [kbRes, docRes] = await Promise.all([
       getKnowledgeBase(kbId),
-      getDocuments(kbId)
+      getDocuments(kbId, 0, PAGE_SIZE)
     ])
     kb.value = kbRes.data
-    documents.value = docRes.data
+    documents.value = docRes.data.data
+    totalPages.value = docRes.data.totalPages
+    totalElements.value = docRes.data.totalElements
   } finally {
     loading.value = false
+  }
+}
+
+async function loadMore() {
+  if (loadingMore.value || currentPage.value >= totalPages.value - 1) return
+  loadingMore.value = true
+  try {
+    const nextPage = currentPage.value + 1
+    const { data } = await getDocuments(kbId, nextPage, PAGE_SIZE)
+    documents.value.push(...data.data)
+    currentPage.value = nextPage
+    totalPages.value = data.totalPages
+  } finally {
+    loadingMore.value = false
   }
 }
 
@@ -145,6 +167,17 @@ onUnmounted(() => chatStore.clearMessages())
             <button class="btn-sm" @click="handleDeleteDoc(doc.id)">删除</button>
           </span>
         </div>
+        <div v-if="totalElements > 0" class="doc-footer">
+          <span class="doc-count">共 {{ totalElements }} 个文档</span>
+          <button
+            v-if="currentPage < totalPages - 1"
+            class="btn-load-more"
+            :disabled="loadingMore"
+            @click="loadMore"
+          >
+            {{ loadingMore ? '加载中...' : '加载更多' }}
+          </button>
+        </div>
       </div>
         </div>
 
@@ -241,6 +274,26 @@ main { padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
 .doc-row { border-bottom: 1px solid #f3f4f6; }
 .doc-row:last-child { border-bottom: none; }
 .doc-row:hover { background: #fafbff; }
+.doc-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: #f9fafb;
+  border-top: 1px solid #eee;
+}
+.doc-count { color: #888; font-size: 0.8rem; }
+.btn-load-more {
+  padding: 6px 16px;
+  background: #f3f4f6;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #555;
+  font-size: 0.85rem;
+}
+.btn-load-more:hover { background: #e5e7eb; }
+.btn-load-more:disabled { opacity: 0.5; cursor: not-allowed; }
 .col-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .doc-link { color: #4f46e5; cursor: pointer; }
 .doc-link:hover { text-decoration: underline; }
