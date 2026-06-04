@@ -1,5 +1,11 @@
 {
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
-  "framework": "vite"
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://ragwiki-api-production-c4d2.up.railway.app/api/:path*"
+    }
+  ]
 }
