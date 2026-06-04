@@ -27,6 +27,7 @@ public class DocumentProcessingService {
     private final TextChunker textChunker;
     private final PromptTemplateService promptTemplateService;
     private final ChatModel chatModel;
+    private final EmbeddingService embeddingService;
     private final JdbcTemplate jdbcTemplate;
 
     private static final int SUMMARY_MAX_CHARS = 3000;
@@ -59,14 +60,16 @@ public class DocumentProcessingService {
                 return;
             }
 
-            // Step 3 & 4: Store each chunk (no embedding — use keyword search instead)
+            // Step 3 & 4: Embed + store each chunk via DeepSeek embedding API
             for (int i = 0; i < chunks.size(); i++) {
                 String chunkText = chunks.get(i);
+                float[] embedding = embeddingService.embed(chunkText);
+                String vectorStr = embeddingService.toPgVectorString(embedding);
 
                 jdbcTemplate.update("""
-                    INSERT INTO document_chunks (content, chunk_index, document_id, kb_id, created_at)
-                    VALUES (?, ?, ?, ?, NOW())
-                    """, chunkText, i, doc.getId(), doc.getKbId());
+                    INSERT INTO document_chunks (content, chunk_index, embedding, document_id, kb_id, created_at)
+                    VALUES (?, ?, ?::vector, ?, ?, NOW())
+                    """, chunkText, i, vectorStr, doc.getId(), doc.getKbId());
             }
 
             // Step 5: Generate AI summary

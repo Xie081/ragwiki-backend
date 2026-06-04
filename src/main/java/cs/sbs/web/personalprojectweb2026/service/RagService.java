@@ -32,7 +32,6 @@ public class RagService {
     private final ChatModel chatModel;
 
     private static final int TOP_K = 5;
-    private static final int KEYWORD_MIN_MATCHES = 3;
 
     // Chinese/English stop words and noise characters
     private static final Pattern NOISE = Pattern.compile(
@@ -160,56 +159,44 @@ public class RagService {
     // ─── Private helpers ───
 
     /**
-     * Hybrid search: keyword first (fast), vector fallback (semantic).
-     * Combines results from both strategies when keyword results are sparse.
+     * 混合检索：向量语义搜索为主，关键词匹配为辅。
+     * 向量搜索负责语义召回，关键词结果补充精确匹配，合并去重后取 TOP_K。
      */
     private List<DocumentChunk> retrieveChunks(Long kbId, String question) {
+        // 第一步：向量语义搜索（主通道）
+        List<DocumentChunk> chunks;
+        try {
+            chunks = vectorSearch(kbId, question);
+            log.debug("向量搜索: {} 个 chunk", chunks.size());
+        } catch (Exception e) {
+            log.warn("向量搜索失败: {}，回退到关键词搜索", e.getMessage());
+            chunks = List.of();
+        }
+
+        // 第二步：关键词搜索（补充精确匹配，提升召回精度）
         String[] keywords = extractKeywords(question);
-
-        // If no meaningful keywords, skip keyword search entirely
-        if (keywords.length == 0) {
-            log.debug("No keywords extracted, trying vector search directly");
-            try {
-                return vectorSearch(kbId, question);
-            } catch (Exception e) {
-                log.warn("Vector search failed for keyword-less query: {}", e.getMessage());
-                return List.of();
+        if (keywords.length > 0) {
+            String[] padded = Arrays.copyOf(keywords, 5);
+            for (int i = 0; i < 5; i++) {
+                if (padded[i] == null || padded[i].isEmpty()) {
+                    padded[i] = "";
+                }
             }
-        }
+            List<DocumentChunk> kwChunks = chunkRepository.searchByKeywords(
+                    padded[0], padded[1], padded[2], padded[3], padded[4],
+                    kbId, TOP_K);
+            log.debug("关键词搜索: keywords={}, {} 个 chunk", Arrays.toString(keywords), kwChunks.size());
 
-        // Pad keywords array to exactly 5 (repository needs 5 params)
-        String[] padded = Arrays.copyOf(keywords, 5);
-        for (int i = 0; i < 5; i++) {
-            if (padded[i] == null || padded[i].isEmpty()) {
-                padded[i] = "";  // empty string → ILIKE '%' + '' + '%' matches nothing
-            }
-        }
-
-        List<DocumentChunk> chunks = chunkRepository.searchByKeywords(
-                padded[0], padded[1], padded[2], padded[3], padded[4],
-                kbId, TOP_K);
-
-        log.debug("Keywords: {}, matched {} chunks", Arrays.toString(keywords), chunks.size());
-
-        // Hybrid fallback: only try vector search if keyword search found something
-        // (meaning the KB has content, just not matching these exact keywords)
-        if (chunks.size() < KEYWORD_MIN_MATCHES && chunks.size() > 0) {
-            log.info("Keyword search returned only {} chunks (threshold={}), falling back to vector search",
-                    chunks.size(), KEYWORD_MIN_MATCHES);
-            try {
-                List<DocumentChunk> vectorChunks = vectorSearch(kbId, question);
-                chunks = mergeChunkResults(chunks, vectorChunks, TOP_K);
-                log.info("Hybrid search: combined {} chunks (keyword + vector)", chunks.size());
-            } catch (Exception e) {
-                log.warn("Vector search fallback failed: {}. Using keyword results only.", e.getMessage());
-            }
+            // 合并：向量结果在前，关键词结果去重追加，取 TOP_K
+            chunks = mergeChunkResults(chunks, kwChunks, TOP_K);
+            log.info("混合检索: 合并后 {} 个 chunk（向量 + 关键词）", chunks.size());
         }
 
         return chunks;
     }
 
     /**
-     * Vector-based semantic search as fallback.
+     * 向量语义搜索：将问题转为 embedding，用 PGVector 余弦相似度检索 top-K。
      */
     private List<DocumentChunk> vectorSearch(Long kbId, String question) {
         float[] queryEmbedding = embeddingService.embed(question);
@@ -218,23 +205,23 @@ public class RagService {
     }
 
     /**
-     * Merge keyword and vector search results, deduplicating by chunk ID.
-     * Keyword results come first (higher priority for exact matches).
-     * Package-private for testing.
+     * 合并两组搜索结果，按 chunk ID 去重。
+     * primary 在前（向量语义召回），secondary 去重追加（关键词精确匹配补充）。
+     * Package-private，方便测试。
      */
     List<DocumentChunk> mergeChunkResults(
-            List<DocumentChunk> keywordChunks,
-            List<DocumentChunk> vectorChunks,
+            List<DocumentChunk> primary,
+            List<DocumentChunk> secondary,
             int maxResults) {
         java.util.LinkedHashSet<Long> seenIds = new java.util.LinkedHashSet<>();
         List<DocumentChunk> merged = new ArrayList<>();
 
-        for (DocumentChunk c : keywordChunks) {
+        for (DocumentChunk c : primary) {
             if (seenIds.add(c.getId())) {
                 merged.add(c);
             }
         }
-        for (DocumentChunk c : vectorChunks) {
+        for (DocumentChunk c : secondary) {
             if (seenIds.add(c.getId()) && merged.size() < maxResults) {
                 merged.add(c);
             }

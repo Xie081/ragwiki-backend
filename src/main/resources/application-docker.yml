@@ -30,7 +30,7 @@ spring:
       embedding:
         enabled: true
         options:
-          model: deepseek-embedding
+          model: deepseek-embedding-pro-v1
 
 app:
   jwt:

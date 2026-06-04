@@ -1,7 +1,6 @@
 # 智能知识库管理系统 (RAG Wiki)
 
-> 2026春季 - Web 应用程序开发课程项目  
-> 选题: 基于 RAG (检索增强生成) 技术的智能知识库问答系统
+> 基于 RAG（检索增强生成）技术的智能知识库问答系统——上传文档，用自然语言提问，AI 精准回答。
 
 ---
 
@@ -14,7 +13,7 @@
 | 功能 | 说明 |
 |------|------|
 | 文档管理 | 支持 PDF / Markdown / TXT / DOCX / HTML 上传，自动解析分块存储 |
-| RAG 问答 | 混合搜索 (关键词 + 向量)，检索增强生成，支持多轮对话上下文 |
+| RAG 问答 | 混合搜索（向量语义为主、关键词匹配为辅），支持多轮对话上下文 |
 | AI 摘要 | 文档上传后自动生成中文摘要 |
 | 知识库管理 | 多知识库创建与管理，用户数据隔离 |
 | 流式输出 | SSE 逐字流式渲染，类 ChatGPT 交互体验 |
@@ -46,8 +45,8 @@
 
 ```
 用户提问
-  -> 关键词提取 + 向量化
-  -> 混合搜索 (关键词优先匹配，不足时向量回退)
+  -> 向量语义搜索 (主通道) + 关键词匹配 (补充)
+  -> 混合搜索 (向量优先，关键词精确匹配补充)
   -> 检索 Top-K 相关文档块
   -> 拼装 Prompt (System Prompt + 对话历史 + 上下文 + 问题)
   -> DeepSeek Chat API (SSE 流式)
@@ -63,7 +62,7 @@
 | 后端框架 | Spring Boot | 3.5.14 |
 | 语言 | Java | 21 |
 | AI 框架 | Spring AI (OpenAI Starter) | 1.0.0-M6 |
-| LLM | DeepSeek (deepseek-chat / deepseek-embedding) | - |
+| LLM | DeepSeek (deepseek-chat / deepseek-embedding-pro-v1) | - |
 | 数据库 | PostgreSQL + PGVector 扩展 | 16+ |
 | 安全 | Spring Security + JWT (jjwt) | 0.12.6 |
 | PDF 解析 | Apache PDFBox | 3.0.3 |
@@ -85,8 +84,8 @@
 
 - JDK 21+
 - Node.js 18+
-- PostgreSQL 16+ (需安装 PGVector 扩展)
-- DeepSeek API Key ([申请地址](https://platform.deepseek.com/))
+- PostgreSQL 16+（需安装 PGVector 扩展）
+- DeepSeek API Key（[申请地址](https://platform.deepseek.com/)）
 
 ### 1. 克隆项目
 
@@ -97,7 +96,7 @@ cd rag-wiki
 
 ### 2. 配置环境变量
 
-复制 `.env.example` 为 `.env`，填入 API Key:
+复制 `.env.example` 为 `.env`，填入 API Key：
 
 ```bash
 DEEPSEEK_API_KEY=your_deepseek_api_key_here
@@ -111,7 +110,7 @@ CREATE DATABASE rag_wiki;
 -- Flyway 会在首次启动时自动创建表结构
 ```
 
-### 4. Docker 一键启动 (推荐)
+### 4. Docker 一键启动（推荐）
 
 ```bash
 docker compose up -d
@@ -125,13 +124,13 @@ docker compose up -d
 # 后端
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 
-# 前端 (新终端)
+# 前端（新终端）
 cd frontend && npm install && npm run dev
 ```
 
-- 后端: `http://localhost:8080`
-- 前端: `http://localhost:5173`
-- Swagger: `http://localhost:8080/swagger-ui.html`
+- 后端：`http://localhost:8080`
+- 前端：`http://localhost:5173`
+- Swagger：`http://localhost:8080/swagger-ui.html`
 
 ---
 
@@ -157,16 +156,16 @@ cd frontend && npm install && npm run dev
 
 | Method | Path | 说明 |
 |--------|------|------|
-| POST | `/api/knowledge-bases/{kbId}/documents` | 上传文档 (multipart) |
-| GET | `/api/knowledge-bases/{kbId}/documents` | 文档列表 (支持分页) |
-| GET | `/api/documents/{id}/detail` | 文档详情 (含摘要与分块) |
+| POST | `/api/knowledge-bases/{kbId}/documents` | 上传文档（multipart） |
+| GET | `/api/knowledge-bases/{kbId}/documents` | 文档列表（支持分页） |
+| GET | `/api/documents/{id}/detail` | 文档详情（含摘要与分块） |
 | DELETE | `/api/documents/{id}` | 删除文档 |
 
 ### RAG 问答
 
 | Method | Path | 说明 |
 |--------|------|------|
-| POST | `/api/chat/stream` | SSE 流式问答 (推荐) |
+| POST | `/api/chat/stream` | SSE 流式问答（推荐） |
 | POST | `/api/chat/ask` | 普通问答 |
 
 ### Prompt 模板
@@ -191,7 +190,7 @@ users                   knowledge_bases         documents
 | created_at   |   |   | created_at       |   | | storage_path      |
 +--------------+   |   +--------+---------+   | | file_size         |
                    |            |             | | status            |
-                   |   +--------+---------+   | | summary (AI生成)   |
+                   |   +--------+---------+   | | summary（AI 生成） |
                    |   | document_chunks  |   | | kb_id (FK)        |
                    |   +------------------+   | | user_id (FK)      |
                    |   | id (PK)          |   | | created_at        |
@@ -208,23 +207,23 @@ users                   knowledge_bases         documents
                                                   +-------------------+
 ```
 
-- `document_chunks` 的 `embedding` 列使用 PGVector 存储 1536 维向量
+- `document_chunks` 的 `embedding` 列使用 PGVector 存储 1024 维向量（DeepSeek Pro v1）
 - 使用 IVFFlat 索引加速余弦相似度检索
 
 ---
 
 ## Prompt 设计
 
-系统采用数据库模板化管理，支持 `{variable}` 占位符注入。核心模板:
+系统采用数据库模板化管理，支持 `{variable}` 占位符注入。核心模板：
 
-### RAG 问答 (rag-qa)
+### RAG 问答（rag-qa）
 
-**System Prompt:**
+**System Prompt：**
 
 ```
 你是一个专业的知识库助手。
 
-规则:
+规则：
 1. 如果参考文档中有相关信息，请基于文档内容回答，并自然提及参考了哪篇文档
 2. 如果参考文档中没有相关信息或为空，请直接基于知识正常回答
 3. 保持回答简洁、准确、结构化
@@ -232,7 +231,7 @@ users                   knowledge_bases         documents
 5. 如果有对话历史，请结合上下文理解追问意图
 ```
 
-**User Prompt:**
+**User Prompt：**
 
 ```
 对话历史
@@ -246,14 +245,14 @@ users                   knowledge_bases         documents
 请回答用户的问题。
 ```
 
-### 摘要生成 (summarize)
+### 摘要生成（summarize）
 
-**System Prompt:**
+**System Prompt：**
 
 ```
 你是一个文档摘要专家。请为以下文档内容生成一个简洁的摘要。
 
-要求:
+要求：
 1. 摘要长度控制在 200 字以内
 2. 突出文档的核心主题和关键结论
 3. 使用清晰的中文表达
@@ -278,7 +277,7 @@ users                   knowledge_bases         documents
 | 变量名 | 说明 |
 |--------|------|
 | `DEEPSEEK_API_KEY` | DeepSeek API 密钥 |
-| `JWT_SECRET` | JWT 签名密钥 (256 bits) |
+| `JWT_SECRET` | JWT 签名密钥（256 bits） |
 | `SPRING_DATASOURCE_URL` | PostgreSQL 连接地址 |
 | `SPRING_DATASOURCE_USERNAME` | 数据库用户名 |
 | `SPRING_DATASOURCE_PASSWORD` | 数据库密码 |
@@ -286,28 +285,13 @@ users                   knowledge_bases         documents
 
 ---
 
-## 提交物清单
-
-- [x] GitHub 代码仓库 (含频繁 Commit 记录)
-- [x] 系统架构图
-- [x] ER 数据库设计图
-- [x] Prompt 报告 (`docs/prompt-report.md`)
-- [x] 部署外网链接 (Vercel + Railway)
-- [ ] 功能演示视频
-
----
-
 ## AI 辅助开发说明
 
-本项目在开发过程中使用了以下 AI 工具辅助:
+本项目在开发过程中使用了以下 AI 工具辅助：
 
-- **Claude Code**: 项目架构设计、代码生成、代码审查、文档编写
-- AI 辅助开发比例: 约 70%
+- **Claude Code**：项目架构设计、代码生成、代码审查、文档编写
+- AI 辅助开发比例：约 70%
 
-AI 主要参与: 项目架构规划与技术选型、后端全栈代码生成、前端 Vue 3 组件编写、Prompt 模板设计与迭代优化、数据库迁移脚本、部署配置、技术文档撰写。
+AI 主要参与：项目架构规划与技术选型、后端全栈代码生成、前端 Vue 3 组件编写、Prompt 模板设计与迭代优化、数据库迁移脚本、部署配置、技术文档撰写。
 
 所有 AI 生成代码均经过人工审查和测试验证。
-
----
-
-> 截止日期: 2026年6月14日 24:00

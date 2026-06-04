@@ -47,7 +47,7 @@ spring:
       embedding:
         enabled: true
         options:
-          model: ${AI_EMBEDDING_MODEL:deepseek-embedding}
+          model: ${AI_EMBEDDING_MODEL:deepseek-embedding-pro-v1}
 
 # Server
 server:
