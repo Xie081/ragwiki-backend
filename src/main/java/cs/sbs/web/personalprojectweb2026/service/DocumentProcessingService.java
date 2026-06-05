@@ -39,7 +39,7 @@ public class DocumentProcessingService {
     @Transactional
     public void processDocument(Long documentId) {
         Document doc = documentRepository.findById(documentId)
-                .orElseThrow(() -> new RuntimeException("文档不存在: " + documentId));
+                .orElseThrow(() -> new IllegalArgumentException("文档不存在: " + documentId));
 
         try {
             // Update status to PROCESSING

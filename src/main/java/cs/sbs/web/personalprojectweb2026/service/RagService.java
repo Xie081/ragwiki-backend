@@ -290,8 +290,9 @@ public class RagService {
             String vectorStr = embeddingService.toPgVectorString(queryEmbedding);
             chunks = chunkRepository.findSimilarChunksByDocumentId(vectorStr, documentId, TOP_K);
         } catch (Exception e) {
-            log.warn("单文档向量搜索失败: {}，使用全部 chunk", e.getMessage());
-            chunks = chunkRepository.findByDocumentIdOrderByChunkIndex(documentId);
+            log.warn("单文档向量搜索失败: {}，回退取前 {} chunk", e.getMessage(), TOP_K);
+            chunks = chunkRepository.findByDocumentIdOrderByChunkIndex(documentId)
+                    .stream().limit(TOP_K).toList();
         }
 
         if (chunks.isEmpty()) {

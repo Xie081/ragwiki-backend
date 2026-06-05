@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { getKnowledgeBases, createKnowledgeBase, deleteKnowledgeBase } from '@/api/knowledgeBase'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import type { KnowledgeBase } from '@/types'
 
 const authStore = useAuthStore()
@@ -13,6 +14,29 @@ const loading = ref(true)
 const showCreate = ref(false)
 const newName = ref('')
 const newDesc = ref('')
+
+// Confirm dialog state
+const showConfirm = ref(false)
+const confirmMessage = ref('')
+let confirmAction: (() => Promise<void>) | null = null
+
+function showConfirmDialog(message: string, action: () => Promise<void>) {
+  confirmMessage.value = message
+  confirmAction = action
+  showConfirm.value = true
+}
+
+async function onConfirm() {
+  showConfirm.value = false
+  const action = confirmAction
+  confirmAction = null
+  if (action) await action()
+}
+
+function onCancel() {
+  showConfirm.value = false
+  confirmAction = null
+}
 
 async function loadKBs() {
   loading.value = true
@@ -32,9 +56,10 @@ async function handleCreate() {
 }
 
 async function handleDelete(id: number) {
-  if (!confirm('确定删除该知识库及其所有文档？')) return
-  await deleteKnowledgeBase(id)
-  await loadKBs()
+  showConfirmDialog('确定删除该知识库及其所有文档？\n该操作不可恢复。', async () => {
+    await deleteKnowledgeBase(id)
+    await loadKBs()
+  })
 }
 
 function goToKB(id: number) { router.push(`/knowledge-base/${id}`) }
@@ -128,6 +153,14 @@ onMounted(loadKBs)
       </div>
     </main>
   </div>
+
+  <ConfirmDialog
+    :visible="showConfirm"
+    :message="confirmMessage"
+    confirmText="删除"
+    @confirm="onConfirm"
+    @cancel="onCancel"
+  />
 </template>
 
 <style scoped>

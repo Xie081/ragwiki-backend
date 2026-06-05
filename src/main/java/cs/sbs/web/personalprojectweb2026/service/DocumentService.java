@@ -44,9 +44,9 @@ public class DocumentService {
 
     public Document getById(Long id, Long userId) {
         Document doc = documentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("文档不存在"));
+                .orElseThrow(() -> new IllegalArgumentException("文档不存在"));
         if (!doc.getUserId().equals(userId)) {
-            throw new RuntimeException("无权访问该文档");
+            throw new IllegalArgumentException("无权访问该文档");
         }
         return doc;
     }
@@ -140,7 +140,7 @@ public class DocumentService {
      */
     private Document.FileType detectFileType(String originalName) {
         if (originalName == null) {
-            throw new RuntimeException("无法识别文件类型");
+            throw new IllegalArgumentException("无法识别文件类型");
         }
         String name = originalName.toLowerCase();
         if (name.endsWith(".pdf"))               return Document.FileType.PDF;
@@ -148,6 +148,6 @@ public class DocumentService {
         if (name.endsWith(".txt"))               return Document.FileType.TXT;
         if (name.endsWith(".docx"))              return Document.FileType.DOCX;
         if (name.endsWith(".html") || name.endsWith(".htm")) return Document.FileType.HTML;
-        throw new RuntimeException("不支持的文档格式，支持: PDF, Markdown, TXT, DOCX, HTML");
+        throw new IllegalArgumentException("不支持的文档格式，支持: PDF, Markdown, TXT, DOCX, HTML");
     }
 }

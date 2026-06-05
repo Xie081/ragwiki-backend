@@ -26,7 +26,7 @@ public class DocumentController {
             @PathVariable Long kbId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        Long userId = securityUtil.getCurrentUser().getId();
+        Long userId = securityUtil.getCurrentUserId();
         var result = documentService.listByKb(kbId, userId, page, size);
         return ResponseEntity.ok(Map.of(
                 "data", result.getContent(),
@@ -39,19 +39,19 @@ public class DocumentController {
 
     @GetMapping("/documents/{id}")
     public ResponseEntity<?> get(@PathVariable Long id) {
-        Long userId = securityUtil.getCurrentUser().getId();
+        Long userId = securityUtil.getCurrentUserId();
         return ResponseEntity.ok(documentService.getById(id, userId));
     }
 
     @GetMapping("/documents/{id}/detail")
     public ResponseEntity<?> getDetail(@PathVariable Long id) {
-        Long userId = securityUtil.getCurrentUser().getId();
+        Long userId = securityUtil.getCurrentUserId();
         return ResponseEntity.ok(documentService.getDetailWithChunks(id, userId));
     }
 
     @PostMapping("/knowledge-bases/{kbId}/documents")
     public ResponseEntity<?> upload(@PathVariable Long kbId, @RequestParam("file") MultipartFile file) {
-        Long userId = securityUtil.getCurrentUser().getId();
+        Long userId = securityUtil.getCurrentUserId();
         try {
             Document doc = documentService.upload(kbId, file, userId);
             return ResponseEntity.ok(doc);
@@ -62,14 +62,14 @@ public class DocumentController {
 
     @DeleteMapping("/documents/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id) {
-        Long userId = securityUtil.getCurrentUser().getId();
+        Long userId = securityUtil.getCurrentUserId();
         documentService.delete(id, userId);
         return ResponseEntity.ok(Map.of("message", "删除成功"));
     }
 
     @PostMapping("/documents/{id}/reprocess")
     public ResponseEntity<?> reprocess(@PathVariable Long id) {
-        Long userId = securityUtil.getCurrentUser().getId();
+        Long userId = securityUtil.getCurrentUserId();
         documentService.reprocess(id, userId);
         return ResponseEntity.ok(Map.of("message", "已重新加入处理队列"));
     }
@@ -78,7 +78,7 @@ public class DocumentController {
     public ResponseEntity<?> askDocument(
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
-        Long userId = securityUtil.getCurrentUser().getId();
+        Long userId = securityUtil.getCurrentUserId();
         String question = body.get("question");
         if (question == null || question.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("message", "请输入问题"));
