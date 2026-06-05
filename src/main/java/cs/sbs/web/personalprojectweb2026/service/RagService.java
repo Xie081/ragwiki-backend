@@ -49,7 +49,7 @@ public class RagService {
     /**
      * RAG 问答：检索 → 增强 → 生成。
      */
-    public RagResult ask(Long kbId, String question, List<ConversationMessage> history) {
+    public RagResult ask(Long kbId, String question, List<ConversationMessage> history, boolean solverMode) {
         List<DocumentChunk> chunks = retrieveChunks(kbId, question);
 
         // Batch-load all documents (fixes N+1)
@@ -68,7 +68,7 @@ public class RagService {
         // Render prompt template
         Map<String, String> variables = new LinkedHashMap<>();
         variables.put("context", context);
-        variables.put("question", question);
+        variables.put("question", (solverMode ? "【请给出答案和详细解析】\n" : "") + question);
         variables.put("history", historyText);
         RenderedPrompt rendered = promptTemplateService.render("rag-qa", variables);
 
@@ -93,7 +93,7 @@ public class RagService {
      * 构建渲染后的 Prompt + 来源引用，供流式问答使用。
      */
     public RenderedPromptWithSources buildRenderedPrompt(Long kbId, String question,
-                                                          List<ConversationMessage> history) {
+                                                          List<ConversationMessage> history, boolean solverMode) {
         long t0 = System.currentTimeMillis();
 
         List<DocumentChunk> chunks = retrieveChunks(kbId, question);
@@ -113,7 +113,7 @@ public class RagService {
 
         Map<String, String> variables = new LinkedHashMap<>();
         variables.put("context", context);
-        variables.put("question", question);
+        variables.put("question", (solverMode ? "【请给出答案和详细解析】\n" : "") + question);
         variables.put("history", historyText);
         var rendered = promptTemplateService.render("rag-qa", variables);
 

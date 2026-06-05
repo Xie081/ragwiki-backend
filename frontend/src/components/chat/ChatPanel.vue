@@ -12,6 +12,7 @@ const chatStore = useChatStore()
 const isStreaming = ref(false)
 const sources = ref<CitationSource[]>([])
 const messagesContainer = ref<HTMLElement>()
+const solverMode = ref(false)
 
 let abortController: AbortController | null = null
 
@@ -41,7 +42,7 @@ async function handleSend(question: string) {
     .map(m => ({ id: m.id, role: m.role, content: m.content, timestamp: m.timestamp }))
 
   abortController = streamQuestion(
-    props.knowledgeBaseId, question,
+    props.knowledgeBaseId, question, solverMode.value,
     (token) => {
       const last = chatStore.messages[chatStore.messages.length - 1]
       if (last) chatStore.updateLastAssistantMessage(last.content + token)
@@ -75,6 +76,10 @@ watch(() => chatStore.messages.length, scrollToBottom)
     <div class="chat-topbar">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg>
       <span>AI 问答</span>
+      <label class="solver-toggle" :class="{ active: solverMode }">
+        <input type="checkbox" v-model="solverMode" />
+        <span class="toggle-label">解题模式</span>
+      </label>
       <span v-if="isStreaming" class="streaming-badge">生成中</span>
     </div>
 
@@ -128,6 +133,25 @@ watch(() => chatStore.messages.length, scrollToBottom)
   font-size: var(--text-xs);
   font-weight: 500;
   animation: pulse 2s infinite;
+}
+.solver-toggle {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 4px;
+  cursor: pointer; user-select: none;
+}
+.solver-toggle input { display: none; }
+.toggle-label {
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.solver-toggle.active .toggle-label {
+  background: var(--dusty-blue);
+  color: #fff;
 }
 .chat-body {
   flex: 1;

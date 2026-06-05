@@ -22,6 +22,7 @@ export function syncHistory(kbId: number, messages: RemoteMessage[]) {
 export function streamQuestion(
   knowledgeBaseId: number,
   question: string,
+  solverMode: boolean,
   onToken: (token: string) => void,
   onSources: (sources: Array<{ documentTitle: string; snippet: string }>) => void,
   onError: (err: Event) => void,
@@ -38,7 +39,7 @@ export function streamQuestion(
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ knowledgeBaseId, question, history }),
+    body: JSON.stringify({ knowledgeBaseId, question, solverMode, history }),
     signal: controller.signal
   }).then(response => {
     if (!response.ok || !response.body) {
