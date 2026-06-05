@@ -21,16 +21,20 @@ spring:
 
   ai:
     openai:
+      # DeepSeek chat
       api-key: ${DEEPSEEK_API_KEY}
       base-url: https://api.deepseek.com
       chat:
         enabled: true
         options:
           model: deepseek-chat
+      # SiliconFlow embedding (OpenAI-compatible)
       embedding:
         enabled: true
+        base-url: https://api.siliconflow.cn/v1
+        api-key: ${SILICONFLOW_API_KEY}
         options:
-          model: deepseek-embedding-pro-v1
+          model: BAAI/bge-m3
 
 app:
   jwt:

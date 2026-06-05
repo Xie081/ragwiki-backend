@@ -29,6 +29,7 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      SILICONFLOW_API_KEY: ${SILICONFLOW_API_KEY}
       JWT_SECRET: ${JWT_SECRET:-change-me-to-a-random-secret-key}
       UPLOAD_DIR: /app/uploads
     volumes:
