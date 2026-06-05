@@ -1,5 +1,8 @@
 package cs.sbs.web.personalprojectweb2026.controller;
 
+import cs.sbs.web.personalprojectweb2026.config.SecurityUtil;
+import cs.sbs.web.personalprojectweb2026.model.entity.ChatMessage;
+import cs.sbs.web.personalprojectweb2026.repository.ChatMessageRepository;
 import cs.sbs.web.personalprojectweb2026.service.RagService;
 import cs.sbs.web.personalprojectweb2026.service.RagService.ConversationMessage;
 import cs.sbs.web.personalprojectweb2026.service.RagService.RagResult;
@@ -13,9 +16,11 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.StreamingChatModel;
@@ -31,6 +36,8 @@ public class ChatController {
     private final StreamingChatModel streamingChatModel;
     private final Executor taskExecutor;
     private final ObjectMapper objectMapper;
+    private final SecurityUtil securityUtil;
+    private final ChatMessageRepository chatMessageRepository;
 
     /**
      * Non-streaming RAG Q&A.
@@ -161,5 +168,40 @@ public class ChatController {
         if (question.length() > 2000) {
             throw new IllegalArgumentException("问题长度不能超过2000个字符");
         }
+    }
+
+    @GetMapping("/history/{kbId}")
+    public ResponseEntity<?> loadHistory(@PathVariable Long kbId) {
+        Long userId = securityUtil.getCurrentUserId();
+        List<ChatMessage> messages = chatMessageRepository.findByUserIdAndKbIdOrderByCreatedAtAsc(userId, kbId);
+        var list = messages.stream()
+                .map(m -> {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("role", m.getRole());
+                    item.put("content", m.getContent());
+                    if (m.getSources() != null) item.put("sources", m.getSources());
+                    item.put("timestamp", m.getCreatedAt().toString());
+                    return item;
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(list);
+    }
+
+    @PostMapping("/history/{kbId}")
+    public ResponseEntity<?> syncHistory(@PathVariable Long kbId, @RequestBody List<Map<String, Object>> body) {
+        Long userId = securityUtil.getCurrentUserId();
+        // Replace: delete old messages for this user+kb, then insert new ones
+        chatMessageRepository.deleteByKbId(kbId);
+        for (Map<String, Object> item : body) {
+            ChatMessage msg = ChatMessage.builder()
+                    .userId(userId)
+                    .kbId(kbId)
+                    .role(item.get("role").toString())
+                    .content(item.get("content").toString())
+                    .sources(item.get("sources") != null ? item.get("sources").toString() : null)
+                    .build();
+            chatMessageRepository.save(msg);
+        }
+        return ResponseEntity.ok(Map.of("synced", body.size()));
     }
 }

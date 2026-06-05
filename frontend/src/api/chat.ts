@@ -1,4 +1,20 @@
+import api from './index'
 import type { ChatMessage } from '@/types'
+
+export interface RemoteMessage {
+  role: string
+  content: string
+  sources?: string
+  timestamp: string
+}
+
+export function loadHistory(kbId: number) {
+  return api.get<RemoteMessage[]>(`/chat/history/${kbId}`)
+}
+
+export function syncHistory(kbId: number, messages: RemoteMessage[]) {
+  return api.post(`/chat/history/${kbId}`, messages)
+}
 
 /**
  * SSE 流式问答。返回 AbortController 用于取消。
