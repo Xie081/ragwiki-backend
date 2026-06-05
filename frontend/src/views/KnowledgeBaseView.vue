@@ -117,7 +117,7 @@ function handleDeleteKB() {
   })
 }
 
-onMounted(load)
+onMounted(() => { chatStore.setKbId(kbId); load() })
 onUnmounted(() => chatStore.clearMessages())
 </script>
 
