@@ -27,7 +27,7 @@ spring:
       chat:
         enabled: true
         options:
-          model: deepseek-chat
+          model: deepseek-v4-pro
       # SiliconFlow embedding (OpenAI-compatible)
       embedding:
         enabled: true
