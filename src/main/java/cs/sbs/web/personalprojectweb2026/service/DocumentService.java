@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -110,6 +111,7 @@ public class DocumentService {
         return result;
     }
 
+    @Transactional
     public void delete(Long id, Long userId) {
         Document doc = getById(id, userId);
         // Delete chunks
