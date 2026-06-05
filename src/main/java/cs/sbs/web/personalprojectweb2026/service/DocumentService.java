@@ -124,6 +124,7 @@ public class DocumentService {
         documentRepository.delete(doc);
     }
 
+    @Transactional
     public void reprocess(Long id, Long userId) {
         Document doc = getById(id, userId);
         // Delete existing chunks
