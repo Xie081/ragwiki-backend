@@ -191,13 +191,17 @@ cd frontend && npm install && npm run dev
 | POST | `/api/chat/stream` | SSE 流式问答（推荐） |
 | POST | `/api/chat/ask` | 普通问答 |
 
-### Prompt 模板
+### 语义搜索
 
 | Method | Path | 说明 |
 |--------|------|------|
-| GET | `/api/prompt-templates` | 获取所有模板 |
-| POST | `/api/prompt-templates` | 创建模板 |
-| PUT | `/api/prompt-templates/{id}` | 更新模板 |
+| GET | `/api/search/{kbId}` | 跨文档向量语义搜索 |
+
+### 系统
+
+| Method | Path | 说明 |
+|--------|------|------|
+| GET | `/health` | 健康检查 |
 
 ---
 

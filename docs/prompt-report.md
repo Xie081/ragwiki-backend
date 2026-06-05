@@ -213,4 +213,4 @@ RAG 场景中最关键的问题是 LLM 的"幻觉"（编造不存在的信息）
 ---
 
 > 📝 本报告记录了从项目初期到完成的 Prompt 设计迭代过程。
-> 所有模板均可通过 API `/api/prompt-templates` 进行在线查看和管理。
+> 模板通过 Flyway 数据库迁移脚本管理，运行时由 `PromptTemplateService` 渲染。
