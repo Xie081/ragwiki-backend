@@ -14,7 +14,7 @@
 |------|------|
 | 文档管理 | 支持 PDF / Markdown / TXT / DOCX / HTML 上传（DOCX 支持段落+表格），自动解析分块存储 |
 | RAG 问答 | 混合搜索（向量语义为主、关键词匹配为辅），支持多轮对话上下文 |
-| 单文档问答 | 针对单个文档提问，快速验证解析效果 |
+| 单文档问答 | 针对单个文档提问，文档无相关内容时 AI 可结合自身知识补充（联网效果） |
 | AI 摘要 | 文档上传后自动生成中文摘要 |
 | 知识库管理 | 多知识库创建与管理，用户数据隔离 |
 | 流式输出 | SSE 逐字流式渲染，类 ChatGPT 交互体验 |
@@ -142,16 +142,16 @@ docker compose up -d
 ### 5. 本地开发启动
 
 ```bash
-# 后端
+# 后端（local profile 端口 8081）
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 
 # 前端（新终端）
 cd frontend && npm install && npm run dev
 ```
 
-- 后端：`http://localhost:8080`
+- 后端：`http://localhost:8081`
 - 前端：`http://localhost:5173`
-- Swagger：`http://localhost:8080/swagger-ui.html`
+- Swagger：`http://localhost:8081/swagger-ui.html`
 
 ---
 
@@ -190,6 +190,8 @@ cd frontend && npm install && npm run dev
 |--------|------|------|
 | POST | `/api/chat/stream` | SSE 流式问答（推荐） |
 | POST | `/api/chat/ask` | 普通问答 |
+| GET | `/api/chat/history/{kbId}` | 加载聊天历史 |
+| POST | `/api/chat/history/{kbId}` | 同步聊天历史（前端刷新/关闭时自动调用） |
 
 ### 语义搜索
 
@@ -232,6 +234,17 @@ users                   knowledge_bases         documents
                                                   | user_prompt       |
                                                   | variables (JSON)  |
                                                   +-------------------+
+                                                     
+chat_messages
++---------------------+
+| id (PK)             |
+| user_id (FK)        |
+| kb_id (FK)          |
+| role (user/assistant)|
+| content (TEXT)      |
+| sources (JSONB)     |
+| created_at          |
++---------------------+
 ```
 
 - `document_chunks` 的 `embedding` 列使用 PGVector 存储 1024 维向量（BAAI/bge-m3）
