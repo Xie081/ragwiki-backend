@@ -232,5 +232,12 @@ async function copyContent() {
   color: var(--text);
   margin-bottom: 2px;
 }
-.source-snippet { color: var(--text-muted); font-size: var(--text-xs); }
+.source-snippet {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 </style>

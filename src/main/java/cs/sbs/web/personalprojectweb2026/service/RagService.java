@@ -291,8 +291,8 @@ public class RagService {
                     Document doc = docMap.get(chunk.getDocumentId());
                     return new CitationSource(
                             doc != null ? doc.getOriginalName() : "未知文档",
-                            chunk.getContent().length() > 200
-                                    ? chunk.getContent().substring(0, 200) + "..."
+                            chunk.getContent().length() > 120
+                                    ? chunk.getContent().substring(0, 120) + "..."
                                     : chunk.getContent()
                     );
                 })
@@ -330,15 +330,20 @@ public class RagService {
 
         List<CitationSource> sources = chunks.stream()
                 .map(c -> new CitationSource(docName,
-                        c.getContent().length() > 200
-                                ? c.getContent().substring(0, 200) + "..."
+                        c.getContent().length() > 120
+                                ? c.getContent().substring(0, 120) + "..."
                                 : c.getContent()))
                 .toList();
 
-        // Call LLM
+        // Call LLM — 宽松模式：文档有则引用，无则用自身知识回答（联网效果）
         String prompt = """
                 你是一个文档问答助手。请根据以下文档内容回答用户的问题。
-                如果文档中没有相关信息，请明确告知"该文档中未找到相关信息"。
+
+                规则：
+                1. 如果文档中有相关信息，请基于文档内容回答，在回答中自然地提及文档名（如"根据文档..."），但不要大段复制原文，最多引用一句关键句
+                2. 如果文档中没有相关信息，请直接基于你的知识正常回答，不要声明"文档中未找到"
+                3. 回答保持简洁、准确、结构化
+                4. 使用 Markdown 格式组织回答
 
                 【文档名称】%s
 
@@ -347,7 +352,7 @@ public class RagService {
 
                 【用户问题】
                 %s
-                """.formatted(docName, ctx.toString(), question);
+                """.formatted(docName, ctx.toString(), maybeSolverPrefix(question));
 
         Prompt llmPrompt = new Prompt(List.of(
                 new UserMessage(prompt)));

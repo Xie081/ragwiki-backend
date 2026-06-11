@@ -2,6 +2,9 @@ package cs.sbs.web.personalprojectweb2026.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.time.Instant;
 
 @Entity
@@ -28,6 +31,7 @@ public class ChatMessage {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "JSONB")
     private String sources;
 

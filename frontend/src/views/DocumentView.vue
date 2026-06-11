@@ -325,8 +325,9 @@ onMounted(loadDetail)
 }
 .source-item {
   display: flex; gap: 10px;
-  padding: 8px 0;
+  padding: 6px 0;
   border-bottom: 1px solid var(--border-light);
+  align-items: baseline;
 }
 .source-item:last-child { border-bottom: none; }
 .source-tag {
@@ -341,7 +342,9 @@ onMounted(loadDetail)
 .source-text {
   color: var(--text-secondary);
   font-size: var(--text-xs);
-  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* States */
