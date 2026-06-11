@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getDocumentDetail, reprocessDocument, askDocument } from '@/api/document'
 import { useToast } from '@/composables/useToast'
+import { marked } from 'marked'
 import type { Document } from '@/types'
 import type { DocumentDetailResponse, DocQaResponse } from '@/api/document'
 import { getStatusText, getStatusClass } from '@/utils/status'
@@ -28,6 +29,14 @@ function formatFileSize(bytes: number | null): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+marked.setOptions({ breaks: true, gfm: true })
+
+function renderMarkdown(text: string): string {
+  if (!text) return ''
+  const sanitized = text.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+  return marked.parse(sanitized) as string
 }
 
 async function loadDetail() {
@@ -151,7 +160,7 @@ onMounted(loadDetail)
             </div>
             <div v-else-if="qaError" class="qa-error">{{ qaError }}</div>
             <div v-else-if="qaResult" class="qa-result">
-              <p class="qa-answer">{{ qaResult.answer }}</p>
+              <div class="qa-answer markdown-body" v-html="renderMarkdown(qaResult.answer)" />
               <details v-if="qaResult.sources.length" class="qa-sources">
                 <summary>参考来源 ({{ qaResult.sources.length }} 段)</summary>
                 <div v-for="(s, i) in qaResult.sources" :key="i" class="source-item">
@@ -308,8 +317,64 @@ onMounted(loadDetail)
   font-size: var(--text-base);
   line-height: var(--leading);
   color: var(--text);
-  white-space: pre-wrap;
 }
+
+/* Markdown 渲染样式（与 ChatMessage 保持一致） */
+.markdown-body :deep(h1),
+.markdown-body :deep(h2),
+.markdown-body :deep(h3) {
+  margin: 12px 0 6px;
+  font-size: 1.1em;
+  font-weight: 600;
+}
+.markdown-body :deep(h1) { font-size: 1.3em; }
+.markdown-body :deep(p) { margin: 6px 0; color: var(--text); }
+.markdown-body :deep(ul),
+.markdown-body :deep(ol) { margin: 6px 0; padding-left: 22px; }
+.markdown-body :deep(li) { margin: 3px 0; color: var(--text); }
+.markdown-body :deep(code) {
+  background: var(--surface-alt);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 0.88em;
+  font-family: var(--font-mono);
+  color: var(--dusty-rose);
+}
+.markdown-body :deep(pre) {
+  background: #1e1e1e;
+  color: #e0e0e0;
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  overflow-x: auto;
+  margin: 12px 0;
+}
+.markdown-body :deep(pre code) {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font-size: 0.85em;
+}
+.markdown-body :deep(blockquote) {
+  border-left: 3px solid var(--sage);
+  padding-left: 14px;
+  color: var(--text-secondary);
+  margin: 10px 0;
+}
+.markdown-body :deep(table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0;
+  font-size: 0.9em;
+}
+.markdown-body :deep(th),
+.markdown-body :deep(td) {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  text-align: left;
+}
+.markdown-body :deep(th) { background: var(--surface-alt); font-weight: 600; }
+.markdown-body :deep(strong) { font-weight: 600; }
+.markdown-body :deep(a) { color: var(--dusty-blue); }
 .qa-sources {
   margin-top: 16px;
   padding: 14px 18px;
