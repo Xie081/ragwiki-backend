@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
@@ -188,6 +189,7 @@ public class ChatController {
     }
 
     @PostMapping("/history/{kbId}")
+    @Transactional
     public ResponseEntity<?> syncHistory(@PathVariable Long kbId, @RequestBody List<Map<String, Object>> body) {
         Long userId = securityUtil.getCurrentUserId();
         // Replace: delete old messages for this user+kb, then insert new ones

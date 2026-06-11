@@ -57,6 +57,8 @@ async function handleSend(question: string) {
 function handleStop() {
   abortController?.abort()
   isStreaming.value = false
+  // 确保手动停止时也同步部分回复到后端
+  chatStore.flushSync()
 }
 
 function scrollToBottom() {

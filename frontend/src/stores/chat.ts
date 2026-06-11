@@ -19,11 +19,35 @@ export const useChatStore = defineStore('chat', () => {
 
   function doSync() {
     if (syncTimer) { clearTimeout(syncTimer); syncTimer = null }
-    if (currentKbId != null && messages.value.length > 0) {
-      syncHistory(currentKbId, toRemote()).catch(e => {
-        console.error('Chat sync failed:', e)
-      })
+    if (currentKbId == null || messages.value.length === 0) return
+    syncHistory(currentKbId, toRemote()).catch(e => {
+      console.error('Chat sync failed:', e)
+    })
+  }
+
+  /**
+   * 页面卸载专用：使用 fetch keepalive 确保浏览器不取消请求。
+   * keepalive body 上限 64KB，聊天消息通常远小于此。
+   */
+  function doUnloadSync() {
+    if (currentKbId == null || messages.value.length === 0) return
+    const token = localStorage.getItem('token')
+    const body = JSON.stringify(toRemote())
+    // 64KB 是各浏览器 keepalive body 上限，超限时降级为普通 fetch（可能被取消）
+    if (body.length > 64 * 1024) {
+      console.warn('Chat history too large for keepalive beacon, attempting regular fetch')
     }
+    fetch(`/api/chat/history/${currentKbId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body,
+      keepalive: true
+    }).catch(e => {
+      console.error('Unload chat sync failed:', e)
+    })
   }
 
   async function setKbId(kbId: number) {
@@ -71,9 +95,9 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  // Sync on page unload (refresh / close tab)
+  // Sync on page unload (refresh / close tab) — 使用 keepalive fetch 防止浏览器取消请求
   if (typeof window !== 'undefined') {
-    window.addEventListener('beforeunload', doSync)
+    window.addEventListener('beforeunload', doUnloadSync)
   }
 
   return { messages, setKbId, addMessage, updateLastAssistantMessage, flushSync, clearMessages }
