@@ -63,6 +63,8 @@ async function load() {
     documents.value = docRes.data.data
     totalPages.value = docRes.data.totalPages
     totalElements.value = docRes.data.totalElements
+  } catch {
+    toast.error('加载知识库失败')
   } finally { loading.value = false }
 }
 

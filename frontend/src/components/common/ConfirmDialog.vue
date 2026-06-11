@@ -36,38 +36,39 @@ function cancel() { emit('cancel') }
   z-index: 9999;
 }
 .confirm-dialog {
-  background: white;
-  border-radius: 12px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
   padding: 28px 32px;
   min-width: 340px;
   max-width: 420px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  box-shadow: var(--shadow-lg);
 }
 .confirm-message {
-  font-size: 15px;
-  color: #333;
+  font-size: var(--text-base);
+  color: var(--text);
   margin: 0 0 24px;
-  line-height: 1.6;
+  line-height: var(--leading);
 }
 .confirm-actions {
   display: flex; gap: 12px; justify-content: flex-end;
 }
 .btn-cancel, .btn-confirm {
   padding: 8px 20px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   border: none;
-  font-size: 14px;
+  font-size: var(--text-sm);
+  font-family: var(--font);
   cursor: pointer;
   transition: background .2s;
 }
 .btn-cancel {
-  background: #f0f0f0;
-  color: #666;
+  background: var(--surface-alt);
+  color: var(--text-secondary);
 }
-.btn-cancel:hover { background: #e0e0e0; }
+.btn-cancel:hover { background: var(--border); }
 .btn-confirm {
-  background: #e74c3c;
-  color: white;
+  background: var(--dusty-rose);
+  color: #fff;
 }
-.btn-confirm:hover { background: #c0392b; }
+.btn-confirm:hover { background: #B05A55; }
 </style>

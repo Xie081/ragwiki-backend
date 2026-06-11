@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getDocumentDetail, reprocessDocument, askDocument } from '@/api/document'
 import { useToast } from '@/composables/useToast'
 import { marked } from 'marked'
-import type { Document } from '@/types'
 import type { DocumentDetailResponse, DocQaResponse } from '@/api/document'
 import { getStatusText, getStatusClass } from '@/utils/status'
 
@@ -16,7 +15,7 @@ const toast = useToast()
 const loading = ref(true)
 const reprocessing = ref(false)
 const detail = ref<DocumentDetailResponse | null>(null)
-const doc = ref<Document | null>(null)
+const doc = computed(() => detail.value?.document ?? null)
 
 // QA state
 const qaQuestion = ref('')
@@ -44,7 +43,6 @@ async function loadDetail() {
   try {
     const { data } = await getDocumentDetail(docId)
     detail.value = data
-    doc.value = data.document
   } catch (err: any) {
     toast.error(err.response?.data?.message || '加载文档失败')
     router.back()
@@ -56,7 +54,7 @@ async function handleReprocess() {
   try {
     await reprocessDocument(docId)
     toast.success('已重新加入处理队列')
-    doc.value!.status = 'UPLOADED'
+    if (detail.value) detail.value.document.status = 'UPLOADED'
   } catch (err: any) {
     toast.error(err.response?.data?.message || '重新处理失败')
   } finally { reprocessing.value = false; await loadDetail() }
@@ -285,7 +283,7 @@ onMounted(loadDetail)
   white-space: nowrap;
   transition: background 0.2s;
 }
-.btn-ask:hover { background: var(--sage-dark); }
+.btn-ask:hover { background: #6B7D63; }
 .btn-ask:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .qa-loading {

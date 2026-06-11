@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, watch } from 'vue'
+import { ref, nextTick, watch, onUnmounted } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import { streamQuestion } from '@/api/chat'
 import ChatMessage from './ChatMessage.vue'
@@ -70,6 +70,10 @@ function scrollToBottom() {
 }
 
 watch(() => chatStore.messages.length, scrollToBottom)
+
+onUnmounted(() => {
+  abortController?.abort()
+})
 </script>
 
 <template>

@@ -63,6 +63,7 @@ public class EmbeddingService {
     @SuppressWarnings("unchecked")
     private List<float[]> doEmbedBatch(List<String> texts) {
         try {
+            long start = System.currentTimeMillis();
             String body = restClient.post()
                     .body(Map.of("model", model, "input", texts))
                     .retrieve()
@@ -83,7 +84,7 @@ public class EmbeddingService {
             }
 
             log.debug("Batch embedding: {} texts, {} ms", texts.size(),
-                    System.currentTimeMillis() /* rough */);
+                    System.currentTimeMillis() - start);
             return embeddings;
         } catch (Exception e) {
             log.error("Batch embedding API call failed: {}", e.getMessage());

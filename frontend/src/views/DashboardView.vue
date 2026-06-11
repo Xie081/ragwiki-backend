@@ -48,17 +48,21 @@ async function loadKBs() {
 
 async function handleCreate() {
   if (!newName.value.trim()) return
-  await createKnowledgeBase({ name: newName.value, description: newDesc.value })
-  newName.value = ''
-  newDesc.value = ''
-  showCreate.value = false
-  await loadKBs()
+  try {
+    await createKnowledgeBase({ name: newName.value, description: newDesc.value })
+    newName.value = ''
+    newDesc.value = ''
+    showCreate.value = false
+    await loadKBs()
+  } catch { /* error handled by axios interceptor */ }
 }
 
 async function handleDelete(id: number) {
   showConfirmDialog('确定删除该知识库及其所有文档？\n该操作不可恢复。', async () => {
-    await deleteKnowledgeBase(id)
-    await loadKBs()
+    try {
+      await deleteKnowledgeBase(id)
+      await loadKBs()
+    } catch { /* error handled by axios interceptor */ }
   })
 }
 
