@@ -162,9 +162,8 @@ onMounted(loadDetail)
             <div v-else-if="qaResult" class="qa-result">
               <div class="qa-answer markdown-body" v-html="renderMarkdown(qaResult.answer)" />
               <details v-if="qaResult.sources.length" class="qa-sources">
-                <summary>参考来源 ({{ qaResult.sources.length }} 段)</summary>
+                <summary>参考来源 ({{ qaResult.sources.length }})</summary>
                 <div v-for="(s, i) in qaResult.sources" :key="i" class="source-item">
-                  <span class="source-tag">段落 {{ i + 1 }}</span>
                   <span class="source-text">{{ s.snippet }}</span>
                 </div>
               </details>
@@ -389,27 +388,11 @@ onMounted(loadDetail)
   margin-bottom: 8px;
 }
 .source-item {
-  display: flex; gap: 10px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border-light);
-  align-items: baseline;
-}
-.source-item:last-child { border-bottom: none; }
-.source-tag {
-  flex-shrink: 0;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: var(--sage-light);
-  color: var(--sage);
-  font-size: var(--text-xs);
-  font-weight: 600;
+  padding: 2px 0;
 }
 .source-text {
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: var(--text-xs);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* States */

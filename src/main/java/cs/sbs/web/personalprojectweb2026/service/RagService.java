@@ -291,8 +291,8 @@ public class RagService {
                     Document doc = docMap.get(chunk.getDocumentId());
                     return new CitationSource(
                             doc != null ? doc.getOriginalName() : "未知文档",
-                            chunk.getContent().length() > 120
-                                    ? chunk.getContent().substring(0, 120) + "..."
+                            chunk.getContent().length() > 15
+                                    ? chunk.getContent().substring(0, 15) + "..."
                                     : chunk.getContent()
                     );
                 })
@@ -330,8 +330,8 @@ public class RagService {
 
         List<CitationSource> sources = chunks.stream()
                 .map(c -> new CitationSource(docName,
-                        c.getContent().length() > 120
-                                ? c.getContent().substring(0, 120) + "..."
+                        c.getContent().length() > 15
+                                ? c.getContent().substring(0, 15) + "..."
                                 : c.getContent()))
                 .toList();
 

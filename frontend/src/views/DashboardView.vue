@@ -84,7 +84,7 @@ onMounted(loadKBs)
           <button class="btn-primary" @click="showCreate = true">
             <span class="btn-icon">+</span> 新建知识库
           </button>
-          <button class="btn-ghost" @click="authStore.logout()">退出</button>
+          <button class="btn-ghost" @click="authStore.logout()">退出登录</button>
         </div>
       </div>
     </header>

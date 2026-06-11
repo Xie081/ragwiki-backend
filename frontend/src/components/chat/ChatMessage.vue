@@ -71,11 +71,8 @@ async function copyContent() {
       <div v-if="sources && sources.length > 0 && message.role === 'assistant'" class="sources-box">
         <div class="sources-title">参考来源</div>
         <div v-for="(src, i) in sources" :key="i" class="source-row">
-          <span class="source-icon">📄</span>
-          <div>
-            <span class="source-doc">{{ src.documentTitle }}</span>
-            <span class="source-snippet">{{ src.snippet }}</span>
-          </div>
+          <span class="source-dot">·</span>
+          <span class="source-snippet">{{ src.snippet }}</span>
         </div>
       </div>
     </div>
@@ -219,23 +216,17 @@ async function copyContent() {
   margin-bottom: 10px;
 }
 .source-row {
-  display: flex; gap: 10px;
-  padding: 8px 0;
+  display: flex; gap: 6px;
+  padding: 3px 0;
   border-bottom: 1px solid var(--border-light);
   font-size: var(--text-sm);
+  align-items: baseline;
 }
 .source-row:last-child { border-bottom: none; }
-.source-icon { flex-shrink: 0; margin-top: 1px; }
-.source-doc {
-  display: block;
-  font-weight: 500;
-  color: var(--text);
-  margin-bottom: 2px;
-}
+.source-dot { flex-shrink: 0; color: var(--text-muted); }
 .source-snippet {
   color: var(--text-muted);
   font-size: var(--text-xs);
-  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
